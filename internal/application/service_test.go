@@ -10,7 +10,7 @@ import (
 )
 
 func TestStudentAndCriterionScenarios(t *testing.T) {
-	s := application.NewService(memory.NewRepository())
+	s := application.NewService(memory.NewRepository(), nil)
 	for _, name := range []string{"Анна", "Борис"} {
 		if _, err := s.AddStudent(name); err != nil {
 			t.Fatal(err)
@@ -55,7 +55,7 @@ func (r *failingRepository) Save(domain.Gradebook) error {
 
 func TestInvalidInputDoesNotSave(t *testing.T) {
 	repo := &failingRepository{}
-	s := application.NewService(repo)
+	s := application.NewService(repo, nil)
 	if _, err := s.AddStudent(" "); err == nil {
 		t.Fatal("accepted empty name")
 	}
@@ -80,7 +80,7 @@ func TestRepositoryErrors(t *testing.T) {
 	} {
 		t.Run(operation.name, func(t *testing.T) {
 			repo := &failingRepository{loadErr: wantErr}
-			if err := operation.run(application.NewService(repo)); !errors.Is(err, wantErr) {
+			if err := operation.run(application.NewService(repo, nil)); !errors.Is(err, wantErr) {
 				t.Fatalf("lost load error: %v", err)
 			}
 			if repo.saves != 0 {
@@ -90,14 +90,14 @@ func TestRepositoryErrors(t *testing.T) {
 	}
 	t.Run("save student", func(t *testing.T) {
 		repo := &failingRepository{saveErr: wantErr}
-		student, err := application.NewService(repo).AddStudent("Анна")
+		student, err := application.NewService(repo, nil).AddStudent("Анна")
 		if !errors.Is(err, wantErr) || student.ID() != 0 || repo.saves != 1 {
 			t.Fatalf("save failure reported as success: student=%#v err=%v saves=%d", student, err, repo.saves)
 		}
 	})
 	t.Run("save criterion", func(t *testing.T) {
 		repo := &failingRepository{saveErr: wantErr}
-		criterion, err := application.NewService(repo).AddCriterion("Проект", 10, 1)
+		criterion, err := application.NewService(repo, nil).AddCriterion("Проект", 10, 1)
 		if !errors.Is(err, wantErr) || criterion.ID() != 0 || repo.saves != 1 {
 			t.Fatalf("save failure reported as success: criterion=%#v err=%v saves=%d", criterion, err, repo.saves)
 		}

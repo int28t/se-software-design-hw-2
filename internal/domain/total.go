@@ -59,12 +59,23 @@ func (c *TotalCalculator) Calculate(book Gradebook, studentID StudentID) (Total,
 
 type FinalWeightedTotal struct{}
 
+// IncompleteEvaluationsError lets a report represent a missing final total
+// without treating unrelated calculation errors as an incomplete gradebook.
+type IncompleteEvaluationsError struct {
+	Graded   int
+	Criteria int
+}
+
+func (e *IncompleteEvaluationsError) Error() string {
+	return fmt.Sprintf("для окончательного итога нужны оценки по всем критериям: выставлено %d из %d", e.Graded, e.Criteria)
+}
+
 func (FinalWeightedTotal) Calculate(criteria []Criterion, evaluations []Evaluation) (Total, error) {
 	if len(criteria) == 0 {
 		return Total{}, errors.New("нельзя рассчитать итог: рубрикатор пуст")
 	}
 	if len(evaluations) != len(criteria) {
-		return Total{}, fmt.Errorf("для окончательного итога нужны оценки по всем критериям: выставлено %d из %d", len(evaluations), len(criteria))
+		return Total{}, &IncompleteEvaluationsError{Graded: len(evaluations), Criteria: len(criteria)}
 	}
 	return weightedTotal(criteria, evaluations, false), nil
 }

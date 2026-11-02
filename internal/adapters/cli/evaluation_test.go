@@ -13,7 +13,7 @@ import (
 
 func evaluationService(t *testing.T) *application.Service {
 	t.Helper()
-	service := application.NewService(memory.NewRepository())
+	service := application.NewService(memory.NewRepository(), nil)
 	for _, name := range []string{"Анна", "Борис"} {
 		if _, err := service.AddStudent(name); err != nil {
 			t.Fatal(err)
@@ -26,7 +26,7 @@ func evaluationService(t *testing.T) *application.Service {
 }
 
 func TestEvaluationConsoleLifecycle(t *testing.T) {
-	service := application.NewService(memory.NewRepository())
+	service := application.NewService(memory.NewRepository(), nil)
 	input := "1\nАнна\n1\nБорис\n3\nЭкзамен\n10\n1\n6\n1\n5\n1\n1\n0\n5\n2\n1\n4.5\n6\n1\n7\n1\n1\n10\n6\n1\n8\n1\n1\n6\n1\n6\n2\n0\n"
 	var output bytes.Buffer
 	if err := cli.New(service, strings.NewReader(input), &output).Run(); err != nil {

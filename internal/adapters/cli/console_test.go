@@ -13,7 +13,7 @@ import (
 )
 
 func TestStudentAndCriterionConsoleScenario(t *testing.T) {
-	service := application.NewService(memory.NewRepository())
+	service := application.NewService(memory.NewRepository(), nil)
 	var output bytes.Buffer
 	input := "2\n4\n1\nАнна Иванова\n1\nБорис Петров\n3\nПроект\n20\n3\n3\nЭкзамен\n10.5\n0.25\n2\n4\n0\n"
 	if err := cli.New(service, strings.NewReader(input), &output).Run(); err != nil {
@@ -40,7 +40,7 @@ func TestStudentAndCriterionConsoleScenario(t *testing.T) {
 }
 
 func TestBadInputDoesNotEndSession(t *testing.T) {
-	service := application.NewService(memory.NewRepository())
+	service := application.NewService(memory.NewRepository(), nil)
 	var output bytes.Buffer
 	input := "wrong\n1\n   \n3\nПроект\nabc\n1\n3\nПроект\n10\nabc\n3\nПроект\nNaN\n1\n3\nПроект\n10\n-1\n1\nАнна\n3\nПроект\n10\n1\n0\n"
 	if err := cli.New(service, strings.NewReader(input), &output).Run(); err != nil {
@@ -62,7 +62,7 @@ func TestBadInputDoesNotEndSession(t *testing.T) {
 func TestEOFDoesNotCommitIncompleteInput(t *testing.T) {
 	for _, input := range []string{"", "1\n", "3\n", "3\nПроект\n", "3\nПроект\n10\n"} {
 		t.Run(input, func(t *testing.T) {
-			service := application.NewService(memory.NewRepository())
+			service := application.NewService(memory.NewRepository(), nil)
 			if err := cli.New(service, strings.NewReader(input), io.Discard).Run(); err != nil {
 				t.Fatal(err)
 			}
@@ -86,7 +86,7 @@ func (f failingIO) Write([]byte) (int, error) { return 0, f.err }
 
 func TestIOErrors(t *testing.T) {
 	wantErr := errors.New("I/O failure")
-	service := application.NewService(memory.NewRepository())
+	service := application.NewService(memory.NewRepository(), nil)
 	if err := cli.New(service, failingIO{wantErr}, io.Discard).Run(); !errors.Is(err, wantErr) {
 		t.Fatalf("lost reader error: %v", err)
 	}

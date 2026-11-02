@@ -1,11 +1,24 @@
 package domain_test
 
 import (
+	"errors"
 	"math"
 	"testing"
 
 	"se-software-design-hw-2/internal/domain"
 )
+
+func TestFinalTotalReportsIncompleteCounts(t *testing.T) {
+	book := totalBook(t)
+	if _, err := book.AddEvaluation(1, 1, 0); err != nil {
+		t.Fatal(err)
+	}
+	_, err := domain.NewTotalCalculator(domain.FinalWeightedTotal{}).Calculate(book, 1)
+	incomplete, ok := errors.AsType[*domain.IncompleteEvaluationsError](err)
+	if !ok || incomplete.Graded != 1 || incomplete.Criteria != 2 {
+		t.Fatalf("missing typed completeness information: %v", err)
+	}
+}
 
 func totalBook(t *testing.T) domain.Gradebook {
 	t.Helper()

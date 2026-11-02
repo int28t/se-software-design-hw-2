@@ -15,10 +15,11 @@ type GradebookRepository interface {
 // Service is the facade for the console's application scenarios.
 type Service struct {
 	repository GradebookRepository
+	exporter   ResultExporter
 }
 
-func NewService(repository GradebookRepository) *Service {
-	return &Service{repository: repository}
+func NewService(repository GradebookRepository, exporter ResultExporter) *Service {
+	return &Service{repository: repository, exporter: exporter}
 }
 
 func (s *Service) AddStudent(name string) (domain.Student, error) {

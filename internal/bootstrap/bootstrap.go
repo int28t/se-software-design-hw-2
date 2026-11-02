@@ -9,6 +9,7 @@ import (
 	"go.uber.org/dig"
 
 	"se-software-design-hw-2/internal/adapters/cli"
+	csvadapter "se-software-design-hw-2/internal/adapters/csv"
 	"se-software-design-hw-2/internal/adapters/memory"
 	"se-software-design-hw-2/internal/application"
 )
@@ -18,6 +19,7 @@ func NewConsole(input io.Reader, output io.Writer) (*cli.Console, error) {
 	for _, constructor := range []any{
 		func() (io.Reader, io.Writer) { return input, output },
 		func() application.GradebookRepository { return memory.NewRepository() },
+		func() application.ResultExporter { return csvadapter.NewExporter() },
 		application.NewService,
 		cli.New,
 	} {

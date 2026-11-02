@@ -11,7 +11,7 @@ import (
 )
 
 func TestTotalConsoleReflectsGradeAndRubricChanges(t *testing.T) {
-	service := application.NewService(memory.NewRepository())
+	service := application.NewService(memory.NewRepository(), nil)
 	input := "1\nАнна\n3\nПроект\n10\n1\n3\nЭкзамен\n20\n3\n5\n1\n1\n8\n5\n1\n2\n10\n9\n1\n7\n1\n1\n10\n9\n1\n8\n1\n2\n9\n1\n10\n1\n3\nАктивность\n5\n1\n10\n1\n5\n1\n2\n20\n5\n1\n3\n5\n9\n1\n0\n"
 	var output bytes.Buffer
 	if err := cli.New(service, strings.NewReader(input), &output).Run(); err != nil {
@@ -65,7 +65,7 @@ func TestTotalConsoleHandlesInvalidStudentAndEOF(t *testing.T) {
 }
 
 func TestTotalConsoleRoundsOnlyTheOutput(t *testing.T) {
-	service := application.NewService(memory.NewRepository())
+	service := application.NewService(memory.NewRepository(), nil)
 	if _, err := service.AddStudent("Анна"); err != nil {
 		t.Fatal(err)
 	}

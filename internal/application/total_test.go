@@ -39,7 +39,7 @@ func TestApplicationTotalReadsCurrentState(t *testing.T) {
 	if err := repo.Save(evaluationScenarioBook(t)); err != nil {
 		t.Fatal(err)
 	}
-	service := application.NewService(repo)
+	service := application.NewService(repo, nil)
 	checkApplicationTotal(t, service, 4, 1, 2)
 	if _, err := service.AddEvaluation(1, 2, 6); err != nil {
 		t.Fatal(err)
@@ -69,14 +69,14 @@ func TestTotalScenariosPropagateErrorsAndNeverSave(t *testing.T) {
 			return s.Total(studentID)
 		}
 		repo := &evaluationRepository{loadErr: wantErr}
-		if _, err := run(application.NewService(repo), 1); !errors.Is(err, wantErr) {
+		if _, err := run(application.NewService(repo, nil), 1); !errors.Is(err, wantErr) {
 			t.Fatalf("lost repository error: %v", err)
 		}
 		if repo.saves != 0 {
 			t.Fatal("calculation saved after load failure")
 		}
 		repo = &evaluationRepository{book: evaluationScenarioBook(t)}
-		service := application.NewService(repo)
+		service := application.NewService(repo, nil)
 		if _, err := run(service, 99); err == nil {
 			t.Fatal("accepted unknown student")
 		}

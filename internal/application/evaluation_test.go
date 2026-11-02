@@ -32,7 +32,7 @@ func TestEvaluationScenarios(t *testing.T) {
 	if err := repo.Save(evaluationScenarioBook(t)); err != nil {
 		t.Fatal(err)
 	}
-	service := application.NewService(repo)
+	service := application.NewService(repo, nil)
 	if _, err := service.AddEvaluation(1, 2, 0); err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +103,7 @@ func TestEvaluationRepositoryErrors(t *testing.T) {
 	} {
 		t.Run(operation.name+"/load", func(t *testing.T) {
 			repo := &evaluationRepository{loadErr: wantErr}
-			if err := operation.run(application.NewService(repo)); !errors.Is(err, wantErr) {
+			if err := operation.run(application.NewService(repo, nil)); !errors.Is(err, wantErr) {
 				t.Fatalf("lost load error: %v", err)
 			}
 			if repo.saves != 0 {
@@ -117,7 +117,7 @@ func TestEvaluationRepositoryErrors(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if err := operation.run(application.NewService(repo)); !errors.Is(err, wantErr) {
+				if err := operation.run(application.NewService(repo, nil)); !errors.Is(err, wantErr) {
 					t.Fatalf("lost save error: %v", err)
 				}
 				after, err := repo.book.Evaluations(1)
@@ -134,7 +134,7 @@ func TestEvaluationRepositoryErrors(t *testing.T) {
 
 func TestInvalidEvaluationScenariosDoNotSave(t *testing.T) {
 	repo := &evaluationRepository{book: evaluationScenarioBook(t)}
-	service := application.NewService(repo)
+	service := application.NewService(repo, nil)
 	operations := []func() error{
 		func() error { _, err := service.AddEvaluation(1, 1, 5); return err },
 		func() error { _, err := service.AddEvaluation(1, 2, 11); return err },
