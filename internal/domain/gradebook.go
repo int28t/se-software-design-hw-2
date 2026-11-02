@@ -4,8 +4,9 @@ import "slices"
 
 // Gradebook is the aggregate root for one course. Its zero value is an empty book.
 type Gradebook struct {
-	students []Student
-	criteria []Criterion
+	students    []Student
+	criteria    []Criterion
+	evaluations []Evaluation
 }
 
 func (g *Gradebook) AddStudent(name string) (Student, error) {
@@ -32,5 +33,7 @@ func (g Gradebook) Criteria() []Criterion { return slices.Clone(g.criteria) }
 
 // Clone isolates the mutable collections for repository load/save boundaries.
 func (g Gradebook) Clone() Gradebook {
-	return Gradebook{students: g.Students(), criteria: g.Criteria()}
+	return Gradebook{
+		students: g.Students(), criteria: g.Criteria(), evaluations: slices.Clone(g.evaluations),
+	}
 }

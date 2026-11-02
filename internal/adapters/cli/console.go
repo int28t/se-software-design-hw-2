@@ -26,7 +26,7 @@ func (c *Console) Run() error {
 		return err
 	}
 	for {
-		if _, err := fmt.Fprint(c.output, "\n1 — Добавить студента\n2 — Список студентов\n3 — Добавить критерий\n4 — Список критериев\n0 — Выход\n"); err != nil {
+		if _, err := fmt.Fprint(c.output, "\n1 — Добавить студента\n2 — Список студентов\n3 — Добавить критерий\n4 — Список критериев\n5 — Выставить оценку\n6 — Оценки студента\n7 — Исправить оценку\n8 — Отменить оценку\n0 — Выход\n"); err != nil {
 			return err
 		}
 		choice, err := c.readLine("Выберите действие: ")
@@ -58,8 +58,16 @@ func (c *Console) action(choice string) error {
 		return c.addCriterion()
 	case "4":
 		return c.listCriteria()
+	case "5":
+		return c.recordEvaluation(c.service.AddEvaluation, "Оценка выставлена")
+	case "6":
+		return c.listEvaluations()
+	case "7":
+		return c.recordEvaluation(c.service.CorrectEvaluation, "Оценка исправлена")
+	case "8":
+		return c.cancelEvaluation()
 	default:
-		return c.report(errors.New("неизвестное действие; выберите число от 0 до 4"))
+		return c.report(errors.New("неизвестное действие; выберите число от 0 до 8"))
 	}
 }
 
