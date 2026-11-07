@@ -6,10 +6,12 @@ import (
 	"se-software-design-hw-2/internal/domain"
 )
 
+// Total calculates a final total from the current repository snapshot.
 func (s *Service) Total(studentID domain.StudentID) (domain.Total, error) {
 	return s.calculateTotal(studentID, domain.FinalWeightedTotal{})
 }
 
+// PreliminaryTotal calculates a current total with missing scores treated as zero.
 func (s *Service) PreliminaryTotal(studentID domain.StudentID) (domain.Total, error) {
 	return s.calculateTotal(studentID, domain.PreliminaryWeightedTotal{})
 }

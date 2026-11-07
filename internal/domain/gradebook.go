@@ -1,3 +1,4 @@
+// Package domain defines the course gradebook, its invariants, and total calculation.
 package domain
 
 import "slices"
@@ -9,6 +10,7 @@ type Gradebook struct {
 	evaluations []Evaluation
 }
 
+// AddStudent validates and adds a student without changing the book on failure.
 func (g *Gradebook) AddStudent(name string) (Student, error) {
 	student, err := newStudent(StudentID(len(g.students)+1), name)
 	if err != nil {
@@ -18,6 +20,7 @@ func (g *Gradebook) AddStudent(name string) (Student, error) {
 	return student, nil
 }
 
+// AddCriterion validates and adds a rubric item without changing the book on failure.
 func (g *Gradebook) AddCriterion(name string, maxScore, weight float64) (Criterion, error) {
 	criterion, err := newCriterion(CriterionID(len(g.criteria)+1), name, maxScore, weight)
 	if err != nil {
@@ -27,12 +30,14 @@ func (g *Gradebook) AddCriterion(name string, maxScore, weight float64) (Criteri
 	return criterion, nil
 }
 
-func (g Gradebook) Students() []Student { return slices.Clone(g.students) }
+// Students returns an independent list in insertion order.
+func (g *Gradebook) Students() []Student { return slices.Clone(g.students) }
 
-func (g Gradebook) Criteria() []Criterion { return slices.Clone(g.criteria) }
+// Criteria returns an independent rubric in insertion order.
+func (g *Gradebook) Criteria() []Criterion { return slices.Clone(g.criteria) }
 
 // Clone isolates the mutable collections for repository load/save boundaries.
-func (g Gradebook) Clone() Gradebook {
+func (g *Gradebook) Clone() Gradebook {
 	return Gradebook{
 		students: g.Students(), criteria: g.Criteria(), evaluations: slices.Clone(g.evaluations),
 	}

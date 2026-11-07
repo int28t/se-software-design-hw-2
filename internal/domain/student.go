@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// StudentID identifies a student within the course.
 type StudentID int
 
 // Student is identified by ID: different students may have the same name.
@@ -21,6 +22,8 @@ func newStudent(id StudentID, name string) (Student, error) {
 	return Student{id: id, name: name}, nil
 }
 
+// ID returns the student identity.
 func (s Student) ID() StudentID { return s.id }
 
+// Name returns the trimmed student name.
 func (s Student) Name() string { return s.name }

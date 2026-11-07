@@ -14,29 +14,29 @@ func (c *Console) recordEvaluation(
 	record func(domain.StudentID, domain.CriterionID, float64) (domain.Evaluation, error),
 	message string,
 ) error {
-	studentText, err := c.readLine("ID студента: ")
+	studentText, err := c.promptLine("ID студента: ")
 	if err != nil {
 		return err
 	}
-	criterionText, err := c.readLine("ID критерия: ")
+	criterionText, err := c.promptLine("ID критерия: ")
 	if err != nil {
 		return err
 	}
-	scoreText, err := c.readLine("Балл (десятичный разделитель — точка): ")
+	scoreText, err := c.promptLine("Балл (десятичный разделитель — точка): ")
 	if err != nil {
 		return err
 	}
 	studentID, criterionID, err := parseEvaluationTarget(studentText, criterionText)
 	if err != nil {
-		return c.report(err)
+		return c.printError(err)
 	}
 	score, err := strconv.ParseFloat(scoreText, 64)
 	if err != nil {
-		return c.report(errors.New("балл нужно ввести числом с точкой в качестве десятичного разделителя"))
+		return c.printError(errors.New("балл нужно ввести числом с точкой в качестве десятичного разделителя"))
 	}
 	evaluation, err := record(studentID, criterionID, score)
 	if err != nil {
-		return c.report(err)
+		return c.printError(err)
 	}
 	_, err = fmt.Fprintf(c.output, "%s: студент ID=%d | критерий ID=%d | балл=%g\n",
 		message, evaluation.StudentID(), evaluation.CriterionID(), evaluation.Score().Value())
@@ -44,17 +44,17 @@ func (c *Console) recordEvaluation(
 }
 
 func (c *Console) listEvaluations() error {
-	text, err := c.readLine("ID студента: ")
+	text, err := c.promptLine("ID студента: ")
 	if err != nil {
 		return err
 	}
 	id, err := parseID(text, "студента")
 	if err != nil {
-		return c.report(err)
+		return c.printError(err)
 	}
 	evaluations, err := c.service.Evaluations(domain.StudentID(id))
 	if err != nil {
-		return c.report(err)
+		return c.printError(err)
 	}
 	if len(evaluations) == 0 {
 		_, err := fmt.Fprintln(c.output, "У студента пока нет оценок.")
@@ -73,20 +73,20 @@ func (c *Console) listEvaluations() error {
 }
 
 func (c *Console) cancelEvaluation() error {
-	studentText, err := c.readLine("ID студента: ")
+	studentText, err := c.promptLine("ID студента: ")
 	if err != nil {
 		return err
 	}
-	criterionText, err := c.readLine("ID критерия: ")
+	criterionText, err := c.promptLine("ID критерия: ")
 	if err != nil {
 		return err
 	}
 	studentID, criterionID, err := parseEvaluationTarget(studentText, criterionText)
 	if err != nil {
-		return c.report(err)
+		return c.printError(err)
 	}
 	if err := c.service.CancelEvaluation(studentID, criterionID); err != nil {
-		return c.report(err)
+		return c.printError(err)
 	}
 	_, err = fmt.Fprintf(c.output, "Оценка отменена: студент ID=%d | критерий ID=%d\n", studentID, criterionID)
 	return err

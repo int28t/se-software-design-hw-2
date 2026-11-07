@@ -16,10 +16,12 @@ type ResultRow struct {
 	CriterionCount int
 }
 
+// ResultExporter writes a calculated report to an external destination.
 type ResultExporter interface {
 	Export(destination string, rows []ResultRow) error
 }
 
+// Results builds the report from one snapshot, leaving incomplete totals unavailable.
 func (s *Service) Results() ([]ResultRow, error) {
 	book, err := s.repository.Load()
 	if err != nil {
@@ -40,15 +42,17 @@ func (s *Service) Results() ([]ResultRow, error) {
 				return nil, fmt.Errorf("итог студента ID=%d: %w", student.ID(), err)
 			}
 			row.GradedCount, row.CriterionCount = incomplete.Graded, incomplete.Criteria
-		} else {
-			row.Total = new(total)
-			row.GradedCount, row.CriterionCount = total.GradedCount(), total.CriterionCount()
+			rows = append(rows, row)
+			continue
 		}
+		row.Total = new(total)
+		row.GradedCount, row.CriterionCount = total.GradedCount(), total.CriterionCount()
 		rows = append(rows, row)
 	}
 	return rows, nil
 }
 
+// ExportResults builds the current report and delegates writing to the export port.
 func (s *Service) ExportResults(destination string) error {
 	if s.exporter == nil {
 		return errors.New("экспортёр итогов не подключён")

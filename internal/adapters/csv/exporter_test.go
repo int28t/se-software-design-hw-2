@@ -100,20 +100,33 @@ func (w *failingOutput) Close() error {
 	return w.closeErr
 }
 
-func TestWriteAndCloseReportsAllIOFailures(t *testing.T) {
+func TestWriteAndCloseOwnsOutputAndReportsIOFailures(t *testing.T) {
 	writeErr, closeErr := errors.New("write failure"), errors.New("close failure")
-	for _, output := range []*failingOutput{
-		{writeErr: writeErr}, {closeErr: closeErr}, {writeErr: writeErr, closeErr: closeErr},
+	for _, tc := range []struct {
+		name     string
+		writeErr error
+		closeErr error
+	}{
+		{name: "success"},
+		{name: "write failure", writeErr: writeErr},
+		{name: "close failure", closeErr: closeErr},
+		{name: "write and close failures", writeErr: writeErr, closeErr: closeErr},
 	} {
-		err := writeAndClose(output, nil)
-		if !output.closed || err == nil {
-			t.Fatal("writer was not closed or failure was hidden")
-		}
-		if output.writeErr != nil && !errors.Is(err, writeErr) {
-			t.Fatalf("lost write/flush error: %v", err)
-		}
-		if output.closeErr != nil && !errors.Is(err, closeErr) {
-			t.Fatalf("lost close error: %v", err)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			output := &failingOutput{writeErr: tc.writeErr, closeErr: tc.closeErr}
+			err := NewExporter().writeAndClose(output, nil)
+			if !output.closed {
+				t.Fatal("owned output was not closed")
+			}
+			if tc.writeErr == nil && tc.closeErr == nil && err != nil {
+				t.Fatalf("successful output returned an error: %v", err)
+			}
+			if tc.writeErr != nil && !errors.Is(err, writeErr) {
+				t.Fatalf("lost write/flush error: %v", err)
+			}
+			if tc.closeErr != nil && !errors.Is(err, closeErr) {
+				t.Fatalf("lost close error: %v", err)
+			}
+		})
 	}
 }

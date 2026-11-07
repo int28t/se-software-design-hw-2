@@ -1,3 +1,4 @@
+// Command pos runs the teacher grading console.
 package main
 
 import (

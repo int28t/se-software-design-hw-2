@@ -6,7 +6,12 @@ import (
 	"se-software-design-hw-2/internal/domain"
 )
 
-func (s *Service) AddEvaluation(studentID domain.StudentID, criterionID domain.CriterionID, score float64) (domain.Evaluation, error) {
+// AddEvaluation validates and saves a new evaluation without overwriting an existing one.
+func (s *Service) AddEvaluation(
+	studentID domain.StudentID,
+	criterionID domain.CriterionID,
+	score float64,
+) (domain.Evaluation, error) {
 	book, err := s.repository.Load()
 	if err != nil {
 		return domain.Evaluation{}, fmt.Errorf("загрузка ведомости: %w", err)
@@ -21,6 +26,7 @@ func (s *Service) AddEvaluation(studentID domain.StudentID, criterionID domain.C
 	return evaluation, nil
 }
 
+// Evaluations loads the current evaluations of an existing student.
 func (s *Service) Evaluations(studentID domain.StudentID) ([]domain.Evaluation, error) {
 	book, err := s.repository.Load()
 	if err != nil {
@@ -29,7 +35,12 @@ func (s *Service) Evaluations(studentID domain.StudentID) ([]domain.Evaluation, 
 	return book.Evaluations(studentID)
 }
 
-func (s *Service) CorrectEvaluation(studentID domain.StudentID, criterionID domain.CriterionID, score float64) (domain.Evaluation, error) {
+// CorrectEvaluation validates a replacement score and saves the updated gradebook.
+func (s *Service) CorrectEvaluation(
+	studentID domain.StudentID,
+	criterionID domain.CriterionID,
+	score float64,
+) (domain.Evaluation, error) {
 	book, err := s.repository.Load()
 	if err != nil {
 		return domain.Evaluation{}, fmt.Errorf("загрузка ведомости: %w", err)
@@ -44,6 +55,7 @@ func (s *Service) CorrectEvaluation(studentID domain.StudentID, criterionID doma
 	return evaluation, nil
 }
 
+// CancelEvaluation removes an existing evaluation and saves the updated gradebook.
 func (s *Service) CancelEvaluation(studentID domain.StudentID, criterionID domain.CriterionID) error {
 	book, err := s.repository.Load()
 	if err != nil {

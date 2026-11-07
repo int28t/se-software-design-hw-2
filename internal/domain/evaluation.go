@@ -12,6 +12,7 @@ type Score struct {
 	value float64
 }
 
+// NewScore validates and creates a finite nonnegative score.
 func NewScore(value float64) (Score, error) {
 	if value < 0 || math.IsNaN(value) || math.IsInf(value, 0) {
 		return Score{}, errors.New("балл должен быть неотрицательным конечным числом")
@@ -19,6 +20,7 @@ func NewScore(value float64) (Score, error) {
 	return Score{value: value}, nil
 }
 
+// Value returns the numeric score.
 func (s Score) Value() float64 { return s.value }
 
 // Evaluation is identified by the student/criterion pair, including when corrected.
@@ -28,17 +30,26 @@ type Evaluation struct {
 	score       Score
 }
 
+// StudentID returns the identity of the evaluated student.
 func (e Evaluation) StudentID() StudentID { return e.studentID }
 
+// CriterionID returns the identity of the evaluated rubric item.
 func (e Evaluation) CriterionID() CriterionID { return e.criterionID }
 
+// Score returns the current evaluation score.
 func (e Evaluation) Score() Score { return e.score }
 
 // EvaluationFactory validates references against the actual course rubric.
 // Both initial grading and corrections use this creation path.
 type EvaluationFactory struct{}
 
-func (EvaluationFactory) Create(book Gradebook, studentID StudentID, criterionID CriterionID, value float64) (Evaluation, error) {
+// Create validates both references and the score against the rubric without changing the book.
+func (EvaluationFactory) Create(
+	book Gradebook,
+	studentID StudentID,
+	criterionID CriterionID,
+	value float64,
+) (Evaluation, error) {
 	if err := book.requireStudent(studentID); err != nil {
 		return Evaluation{}, err
 	}
@@ -56,6 +67,7 @@ func (EvaluationFactory) Create(book Gradebook, studentID StudentID, criterionID
 	return Evaluation{studentID: studentID, criterionID: criterionID, score: score}, nil
 }
 
+// AddEvaluation adds a validated evaluation and rejects an already graded pair.
 func (g *Gradebook) AddEvaluation(studentID StudentID, criterionID CriterionID, value float64) (Evaluation, error) {
 	evaluation, err := (EvaluationFactory{}).Create(*g, studentID, criterionID, value)
 	if err != nil {
@@ -68,6 +80,7 @@ func (g *Gradebook) AddEvaluation(studentID StudentID, criterionID CriterionID, 
 	return evaluation, nil
 }
 
+// CorrectEvaluation replaces an existing score only after all validation succeeds.
 func (g *Gradebook) CorrectEvaluation(studentID StudentID, criterionID CriterionID, value float64) (Evaluation, error) {
 	index := g.evaluationIndex(studentID, criterionID)
 	if index < 0 {
@@ -81,6 +94,7 @@ func (g *Gradebook) CorrectEvaluation(studentID StudentID, criterionID Criterion
 	return evaluation, nil
 }
 
+// CancelEvaluation removes an existing evaluation or leaves the book unchanged.
 func (g *Gradebook) CancelEvaluation(studentID StudentID, criterionID CriterionID) error {
 	index := g.evaluationIndex(studentID, criterionID)
 	if index < 0 {
@@ -90,7 +104,8 @@ func (g *Gradebook) CancelEvaluation(studentID StudentID, criterionID CriterionI
 	return nil
 }
 
-func (g Gradebook) Evaluations(studentID StudentID) ([]Evaluation, error) {
+// Evaluations returns an independent list of the student's current evaluations.
+func (g *Gradebook) Evaluations(studentID StudentID) ([]Evaluation, error) {
 	if err := g.requireStudent(studentID); err != nil {
 		return nil, err
 	}
@@ -103,14 +118,14 @@ func (g Gradebook) Evaluations(studentID StudentID) ([]Evaluation, error) {
 	return result, nil
 }
 
-func (g Gradebook) requireStudent(id StudentID) error {
+func (g *Gradebook) requireStudent(id StudentID) error {
 	if slices.IndexFunc(g.students, func(s Student) bool { return s.ID() == id }) < 0 {
 		return fmt.Errorf("студент с ID=%d не найден", id)
 	}
 	return nil
 }
 
-func (g Gradebook) evaluationIndex(studentID StudentID, criterionID CriterionID) int {
+func (g *Gradebook) evaluationIndex(studentID StudentID, criterionID CriterionID) int {
 	return slices.IndexFunc(g.evaluations, func(e Evaluation) bool {
 		return e.StudentID() == studentID && e.CriterionID() == criterionID
 	})

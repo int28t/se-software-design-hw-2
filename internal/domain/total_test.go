@@ -3,6 +3,7 @@ package domain_test
 import (
 	"errors"
 	"math"
+	"slices"
 	"testing"
 
 	"se-software-design-hw-2/internal/domain"
@@ -164,5 +165,139 @@ func TestTotalDoesNotOverflowOrRoundIntermediateValues(t *testing.T) {
 			}
 		}
 		assertTotal(t, domain.NewTotalCalculator(domain.FinalWeightedTotal{}), book, 1, 10.0/3, 2, 2, false)
+	}
+}
+
+type configuredTotalStrategy struct {
+	calculation domain.TotalCalculation
+	err         error
+}
+
+func (s configuredTotalStrategy) Calculate([]domain.Criterion, []domain.Evaluation) (domain.TotalCalculation, error) {
+	return s.calculation, s.err
+}
+
+func TestTotalCalculatorDerivesMetadataFromGradebook(t *testing.T) {
+	book := totalBook(t)
+	for _, criterion := range book.Criteria() {
+		if _, err := book.AddEvaluation(1, criterion.ID(), 0); err != nil {
+			t.Fatal(err)
+		}
+	}
+	calculator := domain.NewTotalCalculator(configuredTotalStrategy{})
+	assertTotal(t, calculator, book, 1, 0, 2, 2, false)
+}
+
+type sumRatioStrategy struct{}
+
+func (sumRatioStrategy) Calculate(
+	criteria []domain.Criterion,
+	evaluations []domain.Evaluation,
+) (domain.TotalCalculation, error) {
+	var score, maximum float64
+	for _, evaluation := range evaluations {
+		score += evaluation.Score().Value()
+	}
+	for _, criterion := range criteria {
+		maximum += criterion.MaxScore()
+	}
+	return domain.TotalCalculation{Value: 10 * score / maximum}, nil
+}
+
+func TestTotalStrategyCanDefineANewFormulaOutsideDomain(t *testing.T) {
+	book := totalBook(t)
+	for _, grade := range []struct {
+		criterion domain.CriterionID
+		score     float64
+	}{{1, 8}, {2, 10}} {
+		if _, err := book.AddEvaluation(1, grade.criterion, grade.score); err != nil {
+			t.Fatal(err)
+		}
+	}
+	calculator := domain.NewTotalCalculator(sumRatioStrategy{})
+	assertTotal(t, calculator, book, 1, 6, 2, 2, false)
+}
+
+func TestTotalCalculatorRejectsInvalidStrategyValues(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		value float64
+	}{
+		{name: "negative", value: -0.01},
+		{name: "above scale", value: 10.01},
+		{name: "NaN", value: math.NaN()},
+		{name: "positive infinity", value: math.Inf(1)},
+		{name: "negative infinity", value: math.Inf(-1)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			strategy := configuredTotalStrategy{
+				calculation: domain.TotalCalculation{Value: tc.value, Preliminary: true},
+			}
+			calculator := domain.NewTotalCalculator(strategy)
+			if _, err := calculator.Calculate(totalBook(t), 1); err == nil {
+				t.Fatalf("accepted an invalid strategy result: %g", tc.value)
+			}
+		})
+	}
+}
+
+func TestTotalCalculatorEnforcesFinalCompletenessForCustomStrategy(t *testing.T) {
+	strategy := configuredTotalStrategy{calculation: domain.TotalCalculation{Value: 7}}
+	_, err := domain.NewTotalCalculator(strategy).Calculate(totalBook(t), 1)
+	incomplete, ok := errors.AsType[*domain.IncompleteEvaluationsError](err)
+	if !ok || incomplete.Graded != 0 || incomplete.Criteria != 2 {
+		t.Fatalf("custom strategy bypassed final completeness: %v", err)
+	}
+}
+
+func TestTotalCalculatorRejectsEmptyRubricForCustomStrategy(t *testing.T) {
+	var book domain.Gradebook
+	if _, err := book.AddStudent("Анна"); err != nil {
+		t.Fatal(err)
+	}
+	strategy := configuredTotalStrategy{calculation: domain.TotalCalculation{Value: 7, Preliminary: true}}
+	if _, err := domain.NewTotalCalculator(strategy).Calculate(book, 1); err == nil {
+		t.Fatal("custom strategy bypassed empty rubric validation")
+	}
+}
+
+func TestTotalCalculatorPropagatesStrategyFailure(t *testing.T) {
+	wantErr := errors.New("calculation failure")
+	strategy := configuredTotalStrategy{err: wantErr}
+	_, err := domain.NewTotalCalculator(strategy).Calculate(totalBook(t), 1)
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("lost strategy failure: %v", err)
+	}
+}
+
+type clearingTotalStrategy struct{}
+
+func (clearingTotalStrategy) Calculate(
+	criteria []domain.Criterion,
+	evaluations []domain.Evaluation,
+) (domain.TotalCalculation, error) {
+	clear(criteria)
+	clear(evaluations)
+	return domain.TotalCalculation{Preliminary: true}, nil
+}
+
+func TestTotalStrategyCannotMutateGradebook(t *testing.T) {
+	book := totalBook(t)
+	if _, err := book.AddEvaluation(1, 1, 8); err != nil {
+		t.Fatal(err)
+	}
+	beforeCriteria := book.Criteria()
+	beforeEvaluations, err := book.Evaluations(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	calculator := domain.NewTotalCalculator(clearingTotalStrategy{})
+	assertTotal(t, calculator, book, 1, 0, 1, 2, true)
+	afterEvaluations, err := book.Evaluations(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(beforeCriteria, book.Criteria()) || !slices.Equal(beforeEvaluations, afterEvaluations) {
+		t.Fatal("strategy changed the aggregate through its input collections")
 	}
 }

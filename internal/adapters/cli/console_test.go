@@ -3,6 +3,7 @@ package cli_test
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -92,5 +93,50 @@ func TestIOErrors(t *testing.T) {
 	}
 	if err := cli.New(service, strings.NewReader("0\n"), failingIO{wantErr}).Run(); !errors.Is(err, wantErr) {
 		t.Fatalf("lost writer error: %v", err)
+	}
+}
+
+type failingMessageWriter struct {
+	message string
+	err     error
+}
+
+func (w failingMessageWriter) Write(data []byte) (int, error) {
+	if strings.Contains(string(data), w.message) {
+		return 0, w.err
+	}
+	return len(data), nil
+}
+
+func TestOutputEOFIsNotTreatedAsEndOfInput(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		input   string
+		message string
+	}{
+		{name: "menu prompt", input: "0\n", message: "Выберите действие:"},
+		{name: "form prompt", input: "1\nАнна\n0\n", message: "Имя студента:"},
+		{name: "confirmation", input: "1\nАнна\n0\n", message: "Добавлен студент:"},
+		{name: "operation error", input: "99\n0\n", message: "Ошибка:"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, wantErr := range []error{io.EOF, fmt.Errorf("output failure: %w", io.EOF)} {
+				service := application.NewService(memory.NewRepository(), nil)
+				output := failingMessageWriter{message: tc.message, err: wantErr}
+				err := cli.New(service, strings.NewReader(tc.input), output).Run()
+				if !errors.Is(err, wantErr) {
+					t.Fatalf("output failure was swallowed: got %v, want %v", err, wantErr)
+				}
+			}
+		})
+	}
+}
+
+func TestWrappedInputEOFIsReported(t *testing.T) {
+	wantErr := fmt.Errorf("input failure: %w", io.EOF)
+	service := application.NewService(memory.NewRepository(), nil)
+	err := cli.New(service, failingIO{err: wantErr}, io.Discard).Run()
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("input failure was swallowed: got %v, want %v", err, wantErr)
 	}
 }

@@ -1,3 +1,4 @@
+// Package application coordinates grading use cases through repository and export ports.
 package application
 
 import (
@@ -18,10 +19,12 @@ type Service struct {
 	exporter   ResultExporter
 }
 
+// NewService creates the use-case facade with the supplied output ports.
 func NewService(repository GradebookRepository, exporter ResultExporter) *Service {
 	return &Service{repository: repository, exporter: exporter}
 }
 
+// AddStudent validates a student and saves the updated gradebook on success.
 func (s *Service) AddStudent(name string) (domain.Student, error) {
 	book, err := s.repository.Load()
 	if err != nil {
@@ -37,6 +40,7 @@ func (s *Service) AddStudent(name string) (domain.Student, error) {
 	return student, nil
 }
 
+// Students loads the current student list without changing the repository.
 func (s *Service) Students() ([]domain.Student, error) {
 	book, err := s.repository.Load()
 	if err != nil {
@@ -45,6 +49,7 @@ func (s *Service) Students() ([]domain.Student, error) {
 	return book.Students(), nil
 }
 
+// AddCriterion validates a rubric item and saves the updated gradebook on success.
 func (s *Service) AddCriterion(name string, maxScore, weight float64) (domain.Criterion, error) {
 	book, err := s.repository.Load()
 	if err != nil {
@@ -60,6 +65,7 @@ func (s *Service) AddCriterion(name string, maxScore, weight float64) (domain.Cr
 	return criterion, nil
 }
 
+// Criteria loads the current rubric without changing the repository.
 func (s *Service) Criteria() ([]domain.Criterion, error) {
 	book, err := s.repository.Load()
 	if err != nil {

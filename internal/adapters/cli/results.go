@@ -5,7 +5,7 @@ import "fmt"
 func (c *Console) listResults() error {
 	rows, err := c.service.Results()
 	if err != nil {
-		return c.report(err)
+		return c.printError(err)
 	}
 	if _, err := fmt.Fprintln(c.output, "Итоги студентов:"); err != nil {
 		return err
@@ -24,12 +24,12 @@ func (c *Console) listResults() error {
 }
 
 func (c *Console) exportResults() error {
-	destination, err := c.readLine("Путь нового CSV-файла: ")
+	destination, err := c.promptLine("Путь нового CSV-файла: ")
 	if err != nil {
 		return err
 	}
 	if err := c.service.ExportResults(destination); err != nil {
-		return c.report(err)
+		return c.printError(err)
 	}
 	_, err = fmt.Fprintf(c.output, "Итоги экспортированы в CSV: %s\n", destination)
 	return err

@@ -14,6 +14,7 @@ import (
 	"se-software-design-hw-2/internal/application"
 )
 
+// NewConsole builds an independent DI graph and returns its resolved console.
 func NewConsole(input io.Reader, output io.Writer) (*cli.Console, error) {
 	container := dig.New()
 	for _, constructor := range []any{

@@ -7,17 +7,17 @@ import (
 )
 
 func (c *Console) showTotal(calculate func(domain.StudentID) (domain.Total, error)) error {
-	text, err := c.readLine("ID студента: ")
+	text, err := c.promptLine("ID студента: ")
 	if err != nil {
 		return err
 	}
 	id, err := parseID(text, "студента")
 	if err != nil {
-		return c.report(err)
+		return c.printError(err)
 	}
 	total, err := calculate(domain.StudentID(id))
 	if err != nil {
-		return c.report(err)
+		return c.printError(err)
 	}
 	label := "Окончательный итог"
 	if total.Preliminary() {
